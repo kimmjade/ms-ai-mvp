@@ -102,9 +102,50 @@ class AzureSearchManager:
             credential=self.credential
         )
         self.search_client = None
+
+    def delete_index(self):
+        """기존 인덱스 삭제"""
+        try:
+            self.index_client.delete_index(SEARCH_INDEX_NAME)
+            st.info(f"기존 인덱스 '{SEARCH_INDEX_NAME}' 삭제 완료")
+            return True
+        except Exception as e:
+            # 인덱스가 없는 경우 무시
+            if "not found" in str(e).lower():
+                return True
+            st.warning(f"인덱스 삭제 중 오류: {str(e)}")
+            return False
         
-    def create_index(self):
+    def clear_all_documents(self):
+        """인덱스의 모든 문서 삭제"""
+        if self.search_client:
+            try:
+                # 모든 문서 검색
+                results = self.search_client.search(
+                    search_text="*",
+                    select=["id"],
+                    top=1000  # 최대 1000개까지 가져오기
+                )
+                
+                # 문서 ID 수집
+                doc_ids = [{"id": doc["id"]} for doc in results]
+                
+                if doc_ids:
+                    # 배치로 삭제
+                    self.search_client.delete_documents(documents=doc_ids)
+                    st.info(f"{len(doc_ids)}개의 기존 문서를 삭제했습니다.")
+                return True
+            except Exception as e:
+                st.warning(f"문서 삭제 중 오류: {str(e)}")
+                return False
+        return True
+        
+    def create_index(self, recreate=False):
         """검색 인덱스 생성"""
+        if recreate:
+            # 기존 인덱스 삭제
+            self.delete_index()
+
         fields = [
             SimpleField(name="id", type=SearchFieldDataType.String, key=True),
             SearchableField(name="content", type=SearchFieldDataType.String),
