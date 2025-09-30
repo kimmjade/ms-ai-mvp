@@ -103,7 +103,7 @@ class AzureSearchManager:
         )
         self.search_client = None
         
-    def create_index(self, recreate=False):
+    def create_index(self):
         """검색 인덱스 생성"""
 
         fields = [
@@ -220,6 +220,37 @@ class AzureSearchManager:
         )
         
         return [{"id": r["id"], "content": r["content"]} for r in results]
+    
+    def clear_all_documents(self):
+        """인덱스의 모든 문서 삭제"""
+        if self.search_client:
+            try:
+                # 모든 문서 검색
+                results = self.search_client.search(
+                    search_text="*",
+                    select=["id"],
+                    top=5000  # 최대 5000개까지 가져오기
+                )
+                
+                # 문서 ID 수집
+                doc_ids = [{"id": doc["id"]} for doc in results]
+                
+                if doc_ids:
+                    # 배치로 삭제 (Azure는 한 번에 최대 1000개)
+                    deleted_count = 0
+                    for i in range(0, len(doc_ids), 1000):
+                        batch = doc_ids[i:i+1000]
+                        self.search_client.delete_documents(documents=batch)
+                        deleted_count += len(batch)
+                    
+                    st.info(f"✅ {deleted_count}개의 기존 문서를 삭제했습니다.")
+                    return True
+                else:
+                    st.info("삭제할 문서가 없습니다.")
+                    return True
+            except Exception as e:
+                st.warning(f"문서 삭제 중 오류: {str(e)}")
+                return False
 
 class SecurityChatbot:
     """보안 규정 챗봇 클래스"""
@@ -382,13 +413,13 @@ def safe_query(connection, user_id: int):
     
 def main():
     st.set_page_config(
-        page_title="사내 보안 규정 챗봇",
+        page_title="개발 보안 규정 챗봇",
         page_icon="🔐",
         layout="wide"
     )
     
-    st.title("🔐 사내 보안 규정 챗봇")
-    st.markdown("PDF 형태의 사내 보안 규정 문서를 업로드하고, 코드나 상황에 대한 보안 검토를 받아보세요.")
+    st.title("🔐 사내 개발 보안 규정 챗봇")
+    st.markdown("PDF 형태의 사내 개발 보안 규정 문서를 업로드하고, 코드나 상황에 대한 보안 검토를 받아보세요.")
     
     # 세션 상태 초기화
     if "search_manager" not in st.session_state:
@@ -422,6 +453,9 @@ def main():
                     text = processor.extract_text_from_pdf(uploaded_file)
                     chunks = processor.create_chunks(text)
                     
+                    # 인덱스에 업로드 전 기존 문서 삭제
+                    st.session_state.search_manager.clear_all_documents()
+
                     # 인덱스에 업로드
                     success = st.session_state.search_manager.upload_documents(chunks)
                     
@@ -451,7 +485,7 @@ def main():
 
             
     # 메인 채팅 인터페이스
-    st.header("💬 보안 규정")
+    st.header("💬 보안 규정에 대해 물어보세요.")
     
     if not st.session_state.document_uploaded:
         st.warning("⚠️ 먼저 보안 규정 문서를 업로드해주세요.")
@@ -480,41 +514,38 @@ def main():
                         st.session_state.messages.append({"role": "assistant", "content": response})            
            
     # 사용자 입력
-    if prompt := st.chat_input("사내 보안 규정에 관한 질문을 입력하세요 (예: 이 코드의 보안 문제점은?)"):
-        if not st.session_state.document_uploaded:
-            st.error("문서를 먼저 업로드해주세요!")
-        else:
-            # 사용자 메시지 추가
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            # AI 응답 생성
-            with st.chat_message("assistant"):
-                with st.spinner("보안 규정을 검토중입니다..."):
-                    # 관련 문서 검색
-                    search_results = st.session_state.search_manager.search(prompt, top_k=3)
+    if prompt := st.chat_input("사내 보안 규정에 관한 질문을 입력하세요 (예: 이 코드의 보안 문제점은?)"):   
+        # 사용자 메시지 추가
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # AI 응답 생성
+        with st.chat_message("assistant"):
+            with st.spinner("보안 규정을 검토중입니다..."):
+                # 관련 문서 검색
+                search_results = st.session_state.search_manager.search(prompt, top_k=3)
+                
+                if search_results:
+                    # 응답 생성
+                    response = st.session_state.chatbot.generate_response(prompt, search_results)
                     
-                    if search_results:
-                        # 응답 생성
-                        response = st.session_state.chatbot.generate_response(prompt, search_results)
-                        
-                        # 관련 문서 표시 (접을 수 있는 섹션)
-                        with st.expander("📖 참고한 보안 규정"):
-                            for i, doc in enumerate(search_results, 1):
-                                st.markdown(f"**[참고 {i}]**")
-                                st.text(doc['content'][:500] + "..." if len(doc['content']) > 500 else doc['content'])
-                                st.divider()
-                    else:
-                        response = "관련 보안 규정을 찾을 수 없습니다. 다른 질문을 해주세요."
-                    
-                    st.markdown(response)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    # 관련 문서 표시 (접을 수 있는 섹션)
+                    with st.expander("📖 참고한 보안 규정"):
+                        for i, doc in enumerate(search_results, 1):
+                            st.markdown(f"**[참고 {i}]**")
+                            st.text(doc['content'][:500] + "..." if len(doc['content']) > 500 else doc['content'])
+                            st.divider()
+                else:
+                    response = "관련 보안 규정을 찾을 수 없습니다. 다른 질문을 해주세요."
+                
+                st.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
     
     # 하단 정보
     with st.expander("ℹ️ 사용 방법"):
         st.markdown("""
-        1. **문서 업로드**: 사이드바에서 보안 규정 PDF를 업로드하세요
+        1. **문서 업로드(관리자)**: 사이드바에서 보안 규정 PDF를 업로드하세요
         2. **질문하기**: 코드나 상황을 설명하고 보안 검토를 요청하세요
         3. **답변 확인**: AI가 관련 규정과 개선 방안을 제시합니다
         
