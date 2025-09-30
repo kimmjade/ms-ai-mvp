@@ -23,12 +23,26 @@ Azure AI Search Service
 https://ktds613-webapp-01-a6d8a3dwaqgua3cf.canadacentral-01.azurewebsites.net/
 
 ## ⚙️로컬 실행 방법
+1. root directory에 .env 파일 생성
+```
+AZURE_OPENAI_ENDPOINT=azure_openai_endpoint
+AZURE_OPENAI_KEY=azure_openai_api_key
+AZURE_OPENAI_DEPLOYMENT=azure_openai_deployment
+AZURE_OPENAI_API_VERSION=azure_openai_api_version
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=azure_openai_embedding_deployment
+AZURE_SEARCH_ENDPOINT=azure_search_endpoint
+AZURE_SEARCH_KEY=azure_search_key
+```
+2. python 패키지 설치
 ```bash
-# 패키지 설치
 pip install -r requirements.txt
 ```
+3. streamlit 실행
 ```bash
-# streamlit 실행
 streamlit run app.py
 ```
-## 기능 설명
+## 🔍기능 설명
+
+## 📝향후 개선 과제
+1. 관리자 페이지 개발
+   - 기업 보안 규정 문서는 사내 관리자만 업로드를 진행하지만, 지금은 관리자 페이지가 없어 사실 모든 사용자가 파일 업로드가 가능하기는 하다.
