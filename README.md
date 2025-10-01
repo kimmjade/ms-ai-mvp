@@ -22,7 +22,7 @@ https://ktds613-webapp-01-a6d8a3dwaqgua3cf.canadacentral-01.azurewebsites.net/
 - Azure webapp
 
 ## ⚙️로컬 실행 방법
-1. root directory에 .env 파일 생성
+1. 프로젝트 root directory에 .env 파일 생성
 ```
 AZURE_OPENAI_ENDPOINT=azure_openai_endpoint
 AZURE_OPENAI_KEY=azure_openai_api_key
