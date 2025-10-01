@@ -1,4 +1,6 @@
 # 🔐사내 개발 보안 규정 챗봇
+## 🌐접속 링크
+https://ktds613-webapp-01-a6d8a3dwaqgua3cf.canadacentral-01.azurewebsites.net/
 
 ## 💡프로젝트 개요
 기업마다 다를 수 있는 **개발 보안 규정**을 쉽게 확인할 수 있는 **챗봇**을 개발하는 프로젝트입니다. 많은 개발자들이 일일이 보안 규정 문서를 찾아보는 것이 번거롭고 시간 소모적일 수 있기 때문에, 챗봇을 통해 규정을 확인할 수 있도록 도와줍니다.
@@ -18,9 +20,6 @@ python 3.12
 Azure openAI (gpt-4.1-mini, text-embedding-ada-002)
 
 Azure AI Search Service
-
-## 🌐접속 링크
-https://ktds613-webapp-01-a6d8a3dwaqgua3cf.canadacentral-01.azurewebsites.net/
 
 ## ⚙️로컬 실행 방법
 1. root directory에 .env 파일 생성
@@ -43,6 +42,6 @@ streamlit run app.py
 ```
 ## 🔍기능 설명
 
-## 📝향후 개선 과제
+## 📝향후 개선
 1. 관리자 페이지 개발
-   - 기업 보안 규정 문서는 사내 관리자만 업로드를 진행하지만, 지금은 관리자 페이지가 없어 사실 모든 사용자가 파일 업로드가 가능하기는 하다.
+   - 기업 보안 규정 문서는 사내 관리자만 업로드를 진행하지만, 지금은 관리자 페이지가 따로 없어 사실 모든 사용자가 파일 업로드가 가능
